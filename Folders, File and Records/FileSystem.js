@@ -10,6 +10,12 @@
 
 const fs = require('fs');
 const path = require('path');
+// console.log(path);
+const readline = require('readline');
+const read = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
 /**
  * Handles database operations.
@@ -17,6 +23,7 @@ const path = require('path');
 class DatabaseManager {
     /**
      * Creates a new database.
+     * @private
      * @param {string} dbName - The name of the new database.
      */
     createDatabase(dbName) {
@@ -44,10 +51,16 @@ class DatabaseManager {
 
     /**
      * Renames an existing database.
+     * @private
      * @param {string} oldDbName - The current name of the database.
      * @param {string} newDbName - The new name for the database.
      */
     renameDatabase(oldDbName, newDbName) {
+
+        if (!(fs.existsSync(oldDbName))) {
+            console.log(`Database "${oldDbName}" doesn't exists.`);
+            return;
+        }
         fs.rename(oldDbName, newDbName, (err) => {
             if (err) throw new Error(`Failed to rename database "${oldDbName}" to "${newDbName}"`);
             console.log(`Database "${oldDbName}" renamed to "${newDbName}" successfully.`);
@@ -56,6 +69,7 @@ class DatabaseManager {
 
     /**
      * Lists the contents (tables) of a database.
+     * @private
      * @param {string} dbName - The name of the database.
      */
     listDatabaseContents(dbName) {
@@ -75,6 +89,7 @@ class DatabaseManager {
 class TableManager {
     /**
      * Creates a new table in the specified database.
+     * @private
      * @param {string} dbName - The name of the database.
      * @param {string} tableName - The name of the new table.
      */
@@ -96,10 +111,18 @@ class TableManager {
     
     /**
      * Reads and displays the contents of a table.
+     * @private
      * @param {string} dbName - The name of the database.
      * @param {string} tableName - The name of the table to read.
      */
     readTable(dbName, tableName) {
+
+        const filePath = path.join(dbName, `${tableName}.json`);
+
+        if (!(fs.existsSync(filePath))) {
+            console.log(`Table "${tableName}" doesn't exists in database "${dbName}".`);
+            return;
+        }
         fs.readFile(path.join(dbName, `${tableName}.json`), 'utf8', (err, data) => {
             if (err) throw new Error(`Failed to read table "${tableName}" in database "${dbName}"`);
             console.log(`Contents of "${tableName}" in Database "${dbName}":`);
@@ -109,6 +132,7 @@ class TableManager {
 
     /**
      * Deletes an existing table.
+     * @private
      * @param {string} dbName - The name of the database.
      * @param {string} tableName - The name of the table to delete.
      */
@@ -122,6 +146,7 @@ class TableManager {
 
     /**
      * Renames an existing table.
+     * @private
      * @param {string} dbName - The name of the database.
      * @param {string} oldTableName - The current name of the table.
      * @param {string} newTableName - The new name for the table.
@@ -142,6 +167,7 @@ class TableManager {
 class RecordManager {
     /**
      * Creates a new record in the specified table.
+     * @private
      * @param {string} dbName - The name of the database.
      * @param {string} tableName - The name of the table.
      * @param {object} recordData - The data of the new record.
@@ -174,7 +200,7 @@ class RecordManager {
         });
     }
     /**
-     * 
+     * @private
      * @param {String} dbName -The name of database
      * @param {String} tableName - The name of table
      * @param {number} recordId - Id of the record that need to be read.
@@ -205,6 +231,7 @@ class RecordManager {
 
     /**
      * Updates an existing record in the specified table.
+     * @private
      * @param {string} dbName - The name of the database.
      * @param {string} tableName - The name of the table.
      * @param {number} recordId - The ID of the record to update.
@@ -229,6 +256,7 @@ class RecordManager {
 
     /**
      * Deletes an existing record from the specified table.
+     * @private
      * @param {string} dbName - The name of the database.
      * @param {string} tableName - The name of the table.
      * @param {number} recordId - The ID of the record to delete.
@@ -254,21 +282,141 @@ class RecordManager {
 /**
  * Test function for database operations.
  */
-function test() {
+function main() {
 
-    const databaseManager = new DatabaseManager()
-    const tableManager = new TableManager()
-    const recordManager = new RecordManager()
 
-    databaseManager.createDatabase("myDatabase")
-    tableManager.createTable("myDatabase", "myTable")
-    recordManager.createRecord("myDatabase", "myTable", { id: 1, name: "John Doe" })
-    recordManager.readRecord("myDatabase","myTable",1)
-    // recordManager.updateRecord("myDatabase", "myTable", 1, { id: 1, name: "Jane Doe" })
-    // recordManager.deleteRecord("myDatabase", "myTable", 1)
-    // tableManager.deleteTable("myDatabase", "myTable")
-    // databaseManager.renameDatabase("myDatabase", "newDatabase");   
-    // databaseManager.deleteDatabase("newDatabase")
+    read.question('Enter operation (0: exit ,1: Create Database, 2: Delet Database, 3: Rename Database,4: Read Database , 5 : Create Table, 6: Delete Table, 7: Rename Table,8: Read Table, 9 : Create Record, 10: Update Record, 11: Delete Record,12: Read Record \n', (operation) => {
+        switch (operation) {
+            case '0':
+                read.close();
+            case '1':
+                read.question('Enter the name of the database: ', (dbName) => {
+                    const databaseManager = new DatabaseManager();
+                    databaseManager.createDatabase(dbName);
+                    read.close();
+                });
+                break;
+            case '2':
+                read.question('Enter the name of the database to delete: ', (dbName) => {
+                    const databaseManager = new DatabaseManager();
+                    databaseManager.deleteDatabase(dbName);
+                    read.close();
+                });
+                break;
+            case '3':
+                read.question('Enter the current name of the database: ', (oldDbName) => {
+                    read.question('Enter the new name of the database: ', (newDbName) => {
+                        const databaseManager = new DatabaseManager();
+                        databaseManager.renameDatabase(oldDbName, newDbName);
+                        read.close();
+                    });
+                });
+                break;
+            case '4':
+                read.question('Enter the name of the database to list contents: ', (dbName) => {
+                    const databaseManager = new DatabaseManager();
+                    databaseManager.listDatabaseContents(dbName);
+                    read.close();
+                });
+                break;
+            case '5':
+                read.question('Enter the name of the database to create table: ', (dbName) => {
+                    read.question('Enter the name of the table: ', (tableName) => {
+                        const tableManager = new TableManager();
+                        tableManager.createTable(dbName, tableName);
+                        read.close();
+                    });
+                });
+                break;
+            case '6':
+                read.question('Enter the name of the database to delete table from: ', (dbName) => {
+                    read.question('Enter the name of the table to delete: ', (tableName) => {
+                        const tableManager = new TableManager();
+                        tableManager.deleteTable(dbName, tableName);
+                        read.close();
+                    });
+                });
+                break;
+            case '7':
+                read.question('Enter the name of the database to rename table: ', (dbName) => {
+                    read.question('Enter the current name of the table: ', (oldTableName) => {
+                        read.question('Enter the new name of the table: ', (newTableName) => {
+                            const tableManager = new TableManager();
+                            tableManager.renameTable(dbName, oldTableName, newTableName);
+                            read.close();
+                        });
+                    });
+                });
+                break;
+            case '8':
+                read.question('Enter the name of the database to read table from: ', (dbName) => {
+                    read.question('Enter the name of the table to read: ', (tableName) => {
+                        const tableManager = new TableManager();
+                        tableManager.readTable(dbName, tableName);
+                        read.close();
+                    });
+                });
+                break;
+            case '9':
+                read.question('Enter the name of the database to create record in table: ', (dbName) => {
+                    read.question('Enter the name of the table: ', (tableName) => {
+                        read.question('Enter the ID of the record: ', (recordId) => {
+                            read.question('Enter the name of the record: ', (recordName) => {
+                                const recordManager = new RecordManager();
+                                console.log(typeof(recordId));
+                                recordManager.createRecord(dbName, tableName, { id: recordId, name: recordName });
+                                read.close();
+                            });
+                        });
+                    });
+                });
+                break;
+            case '10':
+                read.question('Enter the name of the database to update record in table: ', (dbName) => {
+                    read.question('Enter the name of the table: ', (tableName) => {
+                        read.question('Enter the ID of the record: ', (recordId) => {
+                            read.question('Enter the new name of the record: ', (newRecordName) => {
+                                const recordManager = new RecordManager();
+                                console.log(typeof(recordId));
+                                recordManager.updateRecord(dbName, tableName, recordId, { id: recordId, name: newRecordName });
+                                read.close();
+                            });
+                        });
+                    });
+                });
+                break;
+            case '11':
+                read.question('Enter the name of the database to delete record from table: ', (dbName) => {
+                    read.question('Enter the name of the table: ', (tableName) => {
+                        read.question('Enter the ID of the record: ', (recordId) => {
+                            const recordManager = new RecordManager();
+                            console.log(typeof(recordId));
+                            recordManager.deleteRecord(dbName, tableName, recordId);
+                            read.close();
+                        });
+                    });
+                });
+                break;
+            case '12':
+                read.question('Enter the name of the database to read record from table: ', (dbName) => {
+                    read.question('Enter the name of the table: ', (tableName) => {
+                        read.question('Enter the ID of the record: ', (recordId) => {
+                            const recordManager = new RecordManager();
+                            console.log(typeof(recordId));
+                            recordManager.readRecord(dbName, tableName, recordId);
+                            read.close();
+                        });
+                    });
+                });
+                break;
+            default:
+                console.log('Invalid operation.');
+                read.close();
+        }
+        
+        
+    });
+
 }
 
-test();
+main()
